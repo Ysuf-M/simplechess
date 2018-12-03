@@ -11,6 +11,12 @@ public class Main {
 		b, w
 	};
 
+	public enum Result {
+		b, w, s, n
+	};
+	
+	public static Team turn = Team.w;
+
 	public static void main(String[] args) {
 		Tile[][] board = new Tile[4][3];
 		resetBoard(board);
@@ -29,16 +35,20 @@ public class Main {
 			col1 = 0;
 			col2 = 0;
 		}
+
+		public Move(int c1, int r1, int c2, int r2) {
+			this.col1 = c1;
+			this.col2 = c2;
+			this.row1 = r1;
+			this.row2 = r2;
+		}
 	}
 
 	private static void twoPlayer(Tile[][] board) {
-		while (checkGame(board) == Tile.n) {
+		while (checkGame(board) == Result.n) {
 			displayBoard(board);
-			getMove(board, Team.w);
-			if (checkGame(board) == Tile.n) {
-				displayBoard(board);
-				getMove(board, Team.b);
-			}
+			getMove(board, turn);
+			nextTurn();
 		}
 		switch (checkGame(board)) {
 		case b:
@@ -47,18 +57,34 @@ public class Main {
 		case w:
 			System.out.println("Team white has won the game!");
 			break;
+		case s:
+			System.out.println("It's a stalemate.");
 		default:
 		}
 	}
 
-	private static Tile checkGame(Tile[][] board) {
+
+	private static Result checkGame(Tile[][] board) {
 		for (int i = 0; i < board[0].length; i++)
 			if (board[0][i] == Tile.w)
-				return Tile.w;
+				return Result.w;
 		for (int i = 0; i < board[0].length; i++)
 			if (board[board.length - 1][i] == Tile.b)
-				return Tile.b;
-		return Tile.n;
+				return Result.b;
+		boolean movesPossible = false;
+		for (int r1 = 0; r1 < board.length; r1++) {
+			for (int c1 = 0; c1 < board[0].length; c1++) {
+				for (int r2 = 0; r2 < board.length; r2++) {
+					for (int c2 = 0; c2 < board[0].length; c2++) {
+						if (checkMove(new Move(c1, r1, c2, r2), turn, board))
+							movesPossible = true;
+					}
+				}
+			}
+		}
+		if (!movesPossible)
+			return Result.s;
+		return Result.n;
 	}
 
 	private static void getMove(Tile[][] board, Team t) {
@@ -78,24 +104,22 @@ public class Main {
 	}
 
 	private static int ABCto012(char rowIn) {
-		switch (rowIn) {
-		case 'a':
-			return 0;
-		case 'b':
-			return 1;
-		case 'c':
-			return 2;
-		case 'd':
-			return 3;
-		default:
-			System.err.println("ya don fucked up");
-			return 0;
-		}
+		return (int) rowIn - 97;
+	}
+
+	private static char NumToABC(int c) {
+		return (char) (c + 65);
 	}
 
 	private static boolean attemptMove(Move move, Team team, Tile[][] board) {
-		assert move != null : "Move not initialized";
-		//System.out.println("from [" + move.row1 + "][" + move.col1 + "] to [" + move.row2 + "][" + move.col2 + "]");
+		if (checkMove(move, team, board))
+			return false;
+		board[move.row1][move.col1] = Tile.n;
+		board[move.row2][move.col2] = teamTile(team);
+		return true;
+	}
+
+	private static boolean checkMove(Move move, Team team, Tile[][] board) {
 		int r1 = move.row1;
 		int r2 = move.row2;
 		int c1 = move.col1;
@@ -104,8 +128,6 @@ public class Main {
 		if (r1 + direction(team) != r2 || Math.abs(c1 - c2) > 1 || board[r1][c1] != teamTile(team)
 				|| (c1 - c2 > 0 && board[r2][c2] != oppTile(team)) || (c1 - c2 == 0 && board[r2][c2] != Tile.n))
 			return false;
-		board[r1][c1] = Tile.n;
-		board[r2][c2] = teamTile(team);
 		return true;
 	}
 
@@ -137,9 +159,21 @@ public class Main {
 		return 1;
 	}
 
+	private static void nextTurn() {
+		if (turn == Team.w)
+			turn = Team.b;
+		else
+			turn = Team.w;
+	}
+
 	private static void displayBoard(Tile[][] board) {
-		String output = "";
+		String output = "\t";
+		for (int i = 1; i <= board[0].length; i++)
+			output += i + "\t";
+		System.out.println(output);
+		output = "";
 		for (int i = 0; i < board.length; i++) {
+			output += NumToABC(i) + "\t";
 			for (int j = 0; j < board[i].length; j++) {
 				if (board[i][j] == Tile.n)
 					output += "\t";
