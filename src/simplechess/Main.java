@@ -17,29 +17,38 @@ public class Main {
 	public enum Result {
 		b, w, s, n
 	};
-	
+
 	public enum Mode {
 		noPlayer, onePlayer, twoPlayer
 	};
+
 	public static Mode mode = Mode.noPlayer;
 
 	public static Team turn = Team.w;
 
 	public static Result forfeit = Result.n;
-	
-	public static AugmentedMove lastAugMove = new AugmentedMove(new Move(), new Tile[4][2]); 
-	
+
+	public static AugmentedMove lastAugMove = new AugmentedMove(new Move(), new Tile[4][2]);
+
 	public static ArrayList<AugmentedMove> losingMoves;
-	
+
 	public static int turns = 0;
-	
+
 	public static void main(String[] args) {
+		boolean done = false;
+		//while (!done) {
 		Tile[][] board = new Tile[lastAugMove.board.length][lastAugMove.board[0].length];
 		losingMoves = LosingMovesImporter.Import("4x2b", board.length, board[0].length);
 		System.out.println("Total losing moves: " + losingMoves.size());
 		resetBoard(board);
-		startGame(board, Mode.twoPlayer);
+		turn = Team.w;
+		turns = 0;
+		forfeit = Result.n;
+		startGame(board, Mode.noPlayer);
+		if (turns == 0)
+			done = true;
 		exportMoves(board);
+		//}
 	}
 
 	private static void startGame(Tile[][] board, Mode m) {
@@ -58,7 +67,6 @@ public class Main {
 			break;
 		}
 	}
-
 
 	private static void noPlayer(Tile[][] board) {
 		while (checkGame(board) == Result.n) {
@@ -112,8 +120,7 @@ public class Main {
 			forfeit(Team.w);
 	}
 
-	private static boolean checkIfLosingMove(Move move, Team t,
-			Tile[][] board) {
+	private static boolean checkIfLosingMove(Move move, Team t, Tile[][] board) {
 		for (int i = 0; i < losingMoves.size(); i++) {
 			if (arrayEquals(board, losingMoves.get(i).board) && move.equals(losingMoves.get(i).move))
 				return false;
@@ -121,24 +128,23 @@ public class Main {
 		return true;
 	}
 
-
 	private static void endGame(Tile[][] board) {
 		switch (checkGame(board)) {
-			case b :
-				displayBoard(board);
-				System.out.println("Team black has won after " + turns + " turns!");
-				break;
-			case w :
-				displayBoard(board);
-				System.out.println("Team white has won after " + turns + " turns!");
-				break;
-			case s :
-				displayBoard(board);
-				System.out.println("It's a stalemate.");
-			default :
+		case b:
+			displayBoard(board);
+			System.out.println("Team black has won after " + turns + " turns!");
+			break;
+		case w:
+			displayBoard(board);
+			System.out.println("Team white has won after " + turns + " turns!");
+			break;
+		case s:
+			displayBoard(board);
+			System.out.println("It's a stalemate.");
+		default:
 		}
 	}
-	
+
 	private static void exportMoves(Tile[][] board) {
 		if (mode == Mode.noPlayer || (mode == Mode.onePlayer && checkGame(board) == Result.w))
 			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "b");
@@ -168,18 +174,24 @@ public class Main {
 		if (!blackTilesLeft)
 			return Result.w;
 		boolean movesPossible = false;
+		boolean winningMovesPossible = false;
 		for (int r1 = 0; r1 < board.length; r1++) {
 			for (int c1 = 0; c1 < board[0].length; c1++) {
 				for (int r2 = 0; r2 < board.length; r2++) {
 					for (int c2 = 0; c2 < board[0].length; c2++) {
-						if (checkMove(new Move(r1, c1, r2, c2), turn, board))
+						Move move = new Move(r1, c1, r2, c2);
+						if (checkMove(move, turn, board))
 							movesPossible = true;
+						if (checkIfLosingMove(move, turn, board))
+							winningMovesPossible = true;
 					}
 				}
 			}
 		}
 		if (!movesPossible)
 			return Result.s;
+		if (!winningMovesPossible && mode == Mode.noPlayer)
+			forfeit(turn, true);
 		return Result.n;
 	}
 
@@ -189,8 +201,7 @@ public class Main {
 		if (input.equals("forfeit"))
 			forfeit(t);
 		else {
-			while (!attemptMove(stringToMove(input, consoleIn.next().trim()), t,
-					board)) {
+			while (!attemptMove(stringToMove(input, consoleIn.next().trim()), t, board)) {
 				System.err.println("invalid move");
 			}
 		}
@@ -200,10 +211,21 @@ public class Main {
 		if (t == Team.b) {
 			forfeit = Result.w;
 			System.out.println("Team Black has forfeited!");
-		}
-		else {
+		} else {
 			forfeit = Result.b;
 			System.out.println("Team White has forfeited!");
+		}
+	}
+
+	private static void forfeit(Team t, boolean l) {
+		if (l) {
+			if (t == Team.b) {
+				forfeit = Result.b;
+				System.out.println("Team White has forfeited!");
+			} else {
+				forfeit = Result.w;
+				System.out.println("Team Black has forfeited!");
+			}
 		}
 	}
 
@@ -239,11 +261,11 @@ public class Main {
 		int c2 = move.col2;
 
 		int diagMove = Math.abs(c1 - c2);
-		int verMove = (r2-r1) * direction(team);
+		int verMove = (r2 - r1) * direction(team);
 		if (verMove > 2 || verMove < 1 || diagMove > 1
-				|| (verMove == 2 && (diagMove != 0 || r1 != startRow(team, board) || board[r2-direction(team)][c2] != Tile.n))
-				|| board[r1][c1] != teamTile(team)
-				|| (diagMove > 0 && board[r2][c2] != oppTile(team))
+				|| (verMove == 2
+						&& (diagMove != 0 || r1 != startRow(team, board) || board[r2 - direction(team)][c2] != Tile.n))
+				|| board[r1][c1] != teamTile(team) || (diagMove > 0 && board[r2][c2] != oppTile(team))
 				|| (diagMove == 0 && board[r2][c2] != Tile.n))
 			return false;
 		return true;
@@ -251,7 +273,7 @@ public class Main {
 
 	private static int startRow(Team team, Tile[][] board) {
 		if (team == Team.w)
-			return board.length-1;
+			return board.length - 1;
 		return 0;
 	}
 
@@ -290,7 +312,7 @@ public class Main {
 		else
 			turn = Team.w;
 	}
-	
+
 	private static boolean arrayEquals(Tile[][] board, Tile[][] board2) {
 		for (int r = 0; r < board.length; r++)
 			for (int c = 0; c < board[0].length; c++)
@@ -304,7 +326,7 @@ public class Main {
 			for (int c = 0; c < from[0].length; c++)
 				to[r][c] = from[r][c];
 	}
-	
+
 	private static void displayBoard(Tile[][] board) {
 		String output = "\t";
 		for (int i = 1; i <= board[0].length; i++)

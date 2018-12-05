@@ -36,6 +36,9 @@ public class LosingMovesImporter {
 			Move move = augMove.move;
 			for (int r = 0; r < board.length; r++) {
 				for (int c = 0; c < board[0].length; c++) {
+					System.out.println(r + " " + c);
+					System.out.println("Board is " + board.length + " by " + board[0].length);
+					System.out.println(board[r][c]);
 					wr.append(board[r][c].toString());
 					wr.append(" ");
 				}
