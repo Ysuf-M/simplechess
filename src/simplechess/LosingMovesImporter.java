@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import simplechess.Main.Tile;
@@ -13,36 +14,37 @@ import simplechess.Main.Tile;
 public class LosingMovesImporter {
 	private static int rows = 0;
 	private static int cols = 0;
-	public static AugmentedMove[] Import(String fileName, int r, int c) {
+
+	public static ArrayList<AugmentedMove> Import(String fileName, int r, int c) {
 		rows = r;
 		cols = c;
-		AugmentedMove[] losingMoves = new AugmentedMove[100];
+		ArrayList<AugmentedMove> losingMoves = new ArrayList<AugmentedMove>();
 		try {
-			int i = 0;
 			Scanner reader = new Scanner(new FileReader(fileName));
-			while (reader.hasNextLine() && i < 100) {
-				losingMoves[i] = StringToAugMove(reader.nextLine().trim());
-				i++;
-			}
+			while (reader.hasNextLine())
+				losingMoves.add(StringToAugMove(reader.nextLine().trim()));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 		return losingMoves;
 	}
-	
-	public static void Export (AugmentedMove augMove, String fileName) {
+
+	public static void Export(AugmentedMove augMove, String fileName) {
 		try {
-			BufferedWriter wr = new BufferedWriter(new FileWriter(fileName));
+			BufferedWriter wr = new BufferedWriter(new FileWriter(fileName, true));
 			Tile[][] board = augMove.board;
 			Move move = augMove.move;
-			for (int c = 0; c < board[0].length; c++) {
-				for (int r = 0; r < board.length; r++) {
-					wr.write(board[r][c].toString());
+			for (int r = 0; r < board.length; r++) {
+				for (int c = 0; c < board[0].length; c++) {
+					wr.append(board[r][c].toString());
+					wr.append(" ");
 				}
-				wr.write(".");
+				wr.append(" ");
 			}
-			wr.write(";");
-			wr.write("" + move.row1 + "." + move.col1 + "." + move.row2 + "." + move.col2);
+			wr.append(";");
+			wr.append("" + move.row1 + " " + move.col1 + " " + move.row2 + " " + move.col2 + '\n');
+			wr.close();
+			System.out.println("Exported move '" + move + "'.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -57,19 +59,19 @@ public class LosingMovesImporter {
 
 	private static Tile[][] StringToBoard(String in) {
 		Tile[][] board = new Tile[rows][cols];
-		Scanner scn = new Scanner(in).useDelimiter(".");
-		for (int c = 0; c < board[0].length; c++) {
-			for (int r = 0; r < board.length; r++) {
-				board[r][c] = Tile.valueOf(scn.next());
+		Scanner scn = new Scanner(in);
+		for (int r = 0; r < board.length; r++) {
+			for (int c = 0; c < board[0].length; c++) {
+				String value = scn.next();
+				board[r][c] = Tile.valueOf(value);
 			}
 		}
 		return board;
 	}
 
 	private static Move StringToMove(String in) {
-		Scanner scn = new Scanner(in).useDelimiter(".");
-		return new Move(scn.nextInt(), scn.nextInt(), scn.nextInt(),
-				scn.nextInt());
+		Scanner scn = new Scanner(in);
+		return new Move(scn.nextInt(), scn.nextInt(), scn.nextInt(), scn.nextInt());
 	}
 
 }

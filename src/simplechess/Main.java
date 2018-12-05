@@ -1,8 +1,9 @@
 package simplechess;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
-//version 0.01
+//version 0.02
 
 public class Main {
 	public enum Tile {
@@ -16,24 +17,57 @@ public class Main {
 	public enum Result {
 		b, w, s, n
 	};
+	
+	public enum Mode {
+		noPlayer, onePlayer, twoPlayer
+	};
+	public static Mode mode = Mode.noPlayer;
 
 	public static Team turn = Team.w;
 
 	public static Result forfeit = Result.n;
 	
-	public static Tile[][] lastBoard = new Tile[4][2];
+	public static AugmentedMove lastAugMove = new AugmentedMove(new Move(), new Tile[4][2]); 
 	
-	public static Move lastMove = new Move();
+	public static ArrayList<AugmentedMove> losingMoves;
 	
-	public static AugmentedMove[] losingMoves;
+	public static int turns = 0;
 	
 	public static void main(String[] args) {
-		Tile[][] board = new Tile[lastBoard.length][lastBoard[0].length];
+		Tile[][] board = new Tile[lastAugMove.board.length][lastAugMove.board[0].length];
 		losingMoves = LosingMovesImporter.Import("4x2b", board.length, board[0].length);
+		System.out.println("Total losing moves: " + losingMoves.size());
 		resetBoard(board);
-		onePlayer(board);
+		startGame(board, Mode.twoPlayer);
+		exportMoves(board);
 	}
 
+	private static void startGame(Tile[][] board, Mode m) {
+		switch (m) {
+		case noPlayer:
+			mode = Mode.noPlayer;
+			noPlayer(board);
+			break;
+		case onePlayer:
+			mode = Mode.onePlayer;
+			onePlayer(board);
+			break;
+		case twoPlayer:
+			mode = Mode.twoPlayer;
+			twoPlayer(board);
+			break;
+		}
+	}
+
+
+	private static void noPlayer(Tile[][] board) {
+		while (checkGame(board) == Result.n) {
+			displayBoard(board);
+			playMove(board, turn);
+			nextTurn();
+		}
+		endGame(board);
+	}
 
 	private static void twoPlayer(Tile[][] board) {
 		while (checkGame(board) == Result.n) {
@@ -63,6 +97,8 @@ public class Main {
 					for (int c2 = 0; c2 < board[0].length; c2++) {
 						Move move = new Move(r1, c1, r2, c2);
 						if (checkMove(move, t, board) && checkIfLosingMove(move, t, board)) {
+							copyArray(board, lastAugMove.board);
+							lastAugMove.move = move;
 							attemptMove(move, t, board);
 							return;
 						}
@@ -78,8 +114,8 @@ public class Main {
 
 	private static boolean checkIfLosingMove(Move move, Team t,
 			Tile[][] board) {
-		for (int i = 0; i < losingMoves.length; i++) {
-			if (arrayEquals(board, losingMoves[i].board) && move.equals(losingMoves[i].move))
+		for (int i = 0; i < losingMoves.size(); i++) {
+			if (arrayEquals(board, losingMoves.get(i).board) && move.equals(losingMoves.get(i).move))
 				return false;
 		}
 		return true;
@@ -90,17 +126,22 @@ public class Main {
 		switch (checkGame(board)) {
 			case b :
 				displayBoard(board);
-				System.out.println("Team black has won the game!");
+				System.out.println("Team black has won after " + turns + " turns!");
 				break;
 			case w :
 				displayBoard(board);
-				System.out.println("Team white has won the game!");
+				System.out.println("Team white has won after " + turns + " turns!");
 				break;
 			case s :
 				displayBoard(board);
 				System.out.println("It's a stalemate.");
 			default :
 		}
+	}
+	
+	private static void exportMoves(Tile[][] board) {
+		if (mode == Mode.noPlayer || (mode == Mode.onePlayer && checkGame(board) == Result.w))
+			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "b");
 	}
 
 	private static Result checkGame(Tile[][] board) {
@@ -197,12 +238,21 @@ public class Main {
 		int c1 = move.col1;
 		int c2 = move.col2;
 
-		if (r1 + direction(team) != r2 || Math.abs(c1 - c2) > 1
+		int diagMove = Math.abs(c1 - c2);
+		int verMove = (r2-r1) * direction(team);
+		if (verMove > 2 || verMove < 1 || diagMove > 1
+				|| (verMove == 2 && (diagMove != 0 || r1 != startRow(team, board) || board[r2-direction(team)][c2] != Tile.n))
 				|| board[r1][c1] != teamTile(team)
-				|| (c1 - c2 > 0 && board[r2][c2] != oppTile(team))
-				|| (c1 - c2 == 0 && board[r2][c2] != Tile.n))
+				|| (diagMove > 0 && board[r2][c2] != oppTile(team))
+				|| (diagMove == 0 && board[r2][c2] != Tile.n))
 			return false;
 		return true;
+	}
+
+	private static int startRow(Team team, Tile[][] board) {
+		if (team == Team.w)
+			return board.length-1;
+		return 0;
 	}
 
 	private static Tile oppTile(Team t) {
@@ -234,6 +284,7 @@ public class Main {
 	}
 
 	private static void nextTurn() {
+		turns++;
 		if (turn == Team.w)
 			turn = Team.b;
 		else
@@ -248,6 +299,12 @@ public class Main {
 		return true;
 	}
 
+	private static void copyArray(Tile[][] from, Tile[][] to) {
+		for (int r = 0; r < from.length; r++)
+			for (int c = 0; c < from[0].length; c++)
+				to[r][c] = from[r][c];
+	}
+	
 	private static void displayBoard(Tile[][] board) {
 		String output = "\t";
 		for (int i = 1; i <= board[0].length; i++)

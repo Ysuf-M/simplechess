@@ -24,4 +24,10 @@ public class Move {
 			return "from " + Main.NumToABC(row1) + (col1 + 1) + " to "
 					+ Main.NumToABC(row2) + (col2 + 1);
 		}
+		
+		public boolean equals(Move other) {
+			if (row1 == other.row1 && row2 == other.row2 && col1 == other.col1 && col2 == other.col2)
+				return true;
+			return false;
+		}
 }

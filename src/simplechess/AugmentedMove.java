@@ -10,4 +10,8 @@ public class AugmentedMove {
 		move = m;
 		board = b;
 	}
+	
+	public String toString() {
+		return move.toString();
+	}
 }
