@@ -36,9 +36,6 @@ public class LosingMovesImporter {
 			Move move = augMove.move;
 			for (int r = 0; r < board.length; r++) {
 				for (int c = 0; c < board[0].length; c++) {
-					System.out.println(r + " " + c);
-					System.out.println("Board is " + board.length + " by " + board[0].length);
-					System.out.println(board[r][c]);
 					wr.append(board[r][c].toString());
 					wr.append(" ");
 				}
@@ -54,10 +51,17 @@ public class LosingMovesImporter {
 	}
 
 	private static AugmentedMove StringToAugMove(String input) {
-		Scanner scn = new Scanner(input).useDelimiter(";");
-		Tile[][] board = StringToBoard(scn.next());
-		Move move = StringToMove(scn.next());
-		return new AugmentedMove(move, board);
+		if (!(input.equals(""))) {
+			Scanner scn = new Scanner(input).useDelimiter(";");
+			Tile[][] board = StringToBoard(scn.next());
+			Main.displayBoard(board);
+			Move move = StringToMove(scn.next());
+			return new AugmentedMove(move, board);
+		} else {
+			Tile[][] board = new Tile[rows][cols];
+			Main.resetBoard(board);
+			return new AugmentedMove(new Move(), board);
+		}
 	}
 
 	private static Tile[][] StringToBoard(String in) {

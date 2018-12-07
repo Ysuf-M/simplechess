@@ -19,7 +19,7 @@ public class Main {
 	};
 
 	public enum Mode {
-		noPlayer, onePlayer, twoPlayer
+		noPlayer, onePlayerW, onePlayerB, twoPlayer
 	};
 
 	public static Mode mode = Mode.noPlayer;
@@ -36,19 +36,19 @@ public class Main {
 
 	public static void main(String[] args) {
 		boolean done = false;
-		//while (!done) {
-		Tile[][] board = new Tile[lastAugMove.board.length][lastAugMove.board[0].length];
-		losingMoves = LosingMovesImporter.Import("4x2b", board.length, board[0].length);
-		System.out.println("Total losing moves: " + losingMoves.size());
-		resetBoard(board);
-		turn = Team.w;
-		turns = 0;
-		forfeit = Result.n;
-		startGame(board, Mode.noPlayer);
-		if (turns == 0)
-			done = true;
-		exportMoves(board);
-		//}
+		while (!done) {
+			Tile[][] board = new Tile[lastAugMove.board.length][lastAugMove.board[0].length];
+			losingMoves = LosingMovesImporter.Import(board.length + "x" + board[0].length, board.length,
+					board[0].length);
+			System.out.println("Total losing moves: " + losingMoves.size());
+			turn = Team.w;
+			turns = 0;
+			forfeit = Result.n;
+			startGame(board, Mode.onePlayerB);
+			if (turns < 2)
+				done = true;
+			exportMoves(board);
+		}
 	}
 
 	private static void startGame(Tile[][] board, Mode m) {
@@ -57,9 +57,13 @@ public class Main {
 			mode = Mode.noPlayer;
 			noPlayer(board);
 			break;
-		case onePlayer:
-			mode = Mode.onePlayer;
-			onePlayer(board);
+		case onePlayerW:
+			mode = Mode.onePlayerW;
+			onePlayerW(board);
+			break;
+		case onePlayerB:
+			mode = Mode.onePlayerB;
+			onePlayerB(board);
 			break;
 		case twoPlayer:
 			mode = Mode.twoPlayer;
@@ -69,6 +73,8 @@ public class Main {
 	}
 
 	private static void noPlayer(Tile[][] board) {
+		resetBoard(board);
+		resetBoard(lastAugMove.board);
 		while (checkGame(board) == Result.n) {
 			displayBoard(board);
 			playMove(board, turn);
@@ -78,6 +84,8 @@ public class Main {
 	}
 
 	private static void twoPlayer(Tile[][] board) {
+		resetBoard(board);
+		resetBoard(lastAugMove.board);
 		while (checkGame(board) == Result.n) {
 			displayBoard(board);
 			getMove(board, turn);
@@ -86,13 +94,29 @@ public class Main {
 		endGame(board);
 	}
 
-	private static void onePlayer(Tile[][] board) {
+	private static void onePlayerW(Tile[][] board) {
+		resetBoard(board);
+		resetBoard(lastAugMove.board);
 		while (checkGame(board) == Result.n) {
 			displayBoard(board);
 			getMove(board, Team.w);
 			if (checkGame(board) == Result.n) {
 				displayBoard(board);
 				playMove(board, Team.b);
+			}
+		}
+		endGame(board);
+	}
+
+	private static void onePlayerB(Tile[][] board) {
+		resetBoard(board);
+		resetBoard(lastAugMove.board);
+		while (checkGame(board) == Result.n) {
+			displayBoard(board);
+			playMove(board, Team.w);
+			if (checkGame(board) == Result.n) {
+				displayBoard(board);
+				getMove(board, Team.b);
 			}
 		}
 		endGame(board);
@@ -146,8 +170,9 @@ public class Main {
 	}
 
 	private static void exportMoves(Tile[][] board) {
-		if (mode == Mode.noPlayer || (mode == Mode.onePlayer && checkGame(board) == Result.w))
-			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "b");
+		if (mode == Mode.noPlayer || (mode == Mode.onePlayerW && checkGame(board) == Result.w)
+				|| (mode == Mode.onePlayerB && checkGame(board) == Result.b))
+			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length);
 	}
 
 	private static Result checkGame(Tile[][] board) {
@@ -190,7 +215,7 @@ public class Main {
 		}
 		if (!movesPossible)
 			return Result.s;
-		if (!winningMovesPossible && mode == Mode.noPlayer)
+		if (!winningMovesPossible && (mode == Mode.noPlayer || (mode == Mode.onePlayerB && turn == Team.w) || (mode == Mode.onePlayerW && turn == Team.b)))
 			forfeit(turn, true);
 		return Result.n;
 	}
@@ -289,7 +314,7 @@ public class Main {
 		return Tile.w;
 	}
 
-	private static void resetBoard(Tile[][] board) {
+	public static void resetBoard(Tile[][] board) {
 		for (int j = 0; j < board[0].length; j++)
 			board[0][j] = Tile.b;
 		for (int i = 1; i < board.length - 1; i++)
@@ -327,7 +352,7 @@ public class Main {
 				to[r][c] = from[r][c];
 	}
 
-	private static void displayBoard(Tile[][] board) {
+	public static void displayBoard(Tile[][] board) {
 		String output = "\t";
 		for (int i = 1; i <= board[0].length; i++)
 			output += i + "\t";
