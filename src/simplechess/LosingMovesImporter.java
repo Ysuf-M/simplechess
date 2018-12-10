@@ -54,7 +54,6 @@ public class LosingMovesImporter {
 		if (!(input.equals(""))) {
 			Scanner scn = new Scanner(input).useDelimiter(";");
 			Tile[][] board = StringToBoard(scn.next());
-			Main.displayBoard(board);
 			Move move = StringToMove(scn.next());
 			return new AugmentedMove(move, board);
 		} else {
