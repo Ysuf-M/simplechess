@@ -1,5 +1,9 @@
 package simplechess;
 
+import java.sql.Time;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -32,19 +36,27 @@ public class Main {
 
 	public static ArrayList<AugmentedMove> losingMoves;
 
+	public static ArrayList<AugmentedMove> winningMoves;
+
 	public static int turns = 0;
 
 	public static boolean training = false;
 
 	public static void main(String[] args) {
 		boolean done = false;
+		int totalLosingMoves = 0;
 		while (!done) {
 			lastAugMove = new AugmentedMove(new Move(),
 					new Tile[lastAugMove.board.length][lastAugMove.board[0].length]);
 			Tile[][] board = new Tile[lastAugMove.board.length][lastAugMove.board[0].length];
-			losingMoves = LosingMovesImporter.Import(board.length + "x" + board[0].length, board.length,
+			losingMoves = LosingMovesImporter.Import(board.length + "x" + board[0].length + "L", board.length,
 					board[0].length);
-			System.out.println("Total losing moves: " + losingMoves.size());
+			if (losingMoves.size() > totalLosingMoves) {
+				totalLosingMoves = losingMoves.size();
+				DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+				LocalDateTime time = LocalDateTime.now();
+				System.out.println("Learned new move! Total: " + totalLosingMoves + " | " + dtf.format(time));
+			}
 			turn = Team.w;
 			turns = 0;
 			forfeit = Result.n;
@@ -160,7 +172,7 @@ public class Main {
 				for (int c1 = 0; c1 < board[0].length; c1++) {
 					for (int c2 = 0; c2 < board[0].length; c2++) {
 						Move move = new Move(r1, c1, r2, c2);
-						if (checkMove(move, t, board) && !checkIfLosingMove(move, t, board)) {
+						if (checkMove(move, t, board) && !checkIfLosingMove(move, board)) {
 							copyArray(board, lastAugMove.board);
 							lastAugMove.move = move;
 							attemptMove(move, t, board);
@@ -185,9 +197,17 @@ public class Main {
 		attemptMove(move, t, board);
 	}
 
-	private static boolean checkIfLosingMove(Move move, Team t, Tile[][] board) {
+	private static boolean checkIfLosingMove(Move move, Tile[][] board) {
 		for (int i = 0; i < losingMoves.size(); i++) {
 			if (arrayEquals(board, losingMoves.get(i).board) && move.equals(losingMoves.get(i).move))
+				return true;
+		}
+		return false;
+	}
+
+	private static boolean checkIfWinningMove(Move move, Tile[][] board) {
+		for (int i = 0; i < winningMoves.size(); i++) {
+			if (move.equals(winningMoves.get(i).move) && arrayEquals(board, winningMoves.get(i).board))
 				return true;
 		}
 		return false;
@@ -196,24 +216,29 @@ public class Main {
 	private static void endGame(Tile[][] board) {
 		switch (checkGame(board)) {
 		case b:
-			displayBoard(board);
-			System.out.println("Team black has won after " + turns + " turns!");
+			if (!training) {
+				displayBoard(board);
+				System.out.println("Team black has won after " + turns + " turns!");
+			}
 			break;
 		case w:
-			displayBoard(board);
-			System.out.println("Team white has won after " + turns + " turns!");
+			if (!training) {
+				displayBoard(board);
+				System.out.println("Team white has won after " + turns + " turns!");
+			}
 			break;
 		case s:
-			displayBoard(board);
-			System.out.println("It's a stalemate.");
+			if (!training) {
+				displayBoard(board);
+				System.out.println("It's a stalemate.");
+			}
 		default:
 		}
 	}
 
 	private static boolean exportMoves(Tile[][] board) {
-		boolean isTraining = false;
-		if (mode == Mode.trainingB || mode == Mode.trainingW)
-			isTraining = true;
+		if (mode == Mode.noPlayer)
+			return false;
 		if (lastAugMove.move.equals(new Move())) {
 			System.out.println("Seems the game was rigged from the start.");
 			return false;
@@ -221,10 +246,18 @@ public class Main {
 		if (((mode == Mode.noPlayer && checkGame(board) != Result.s)
 				|| ((mode == Mode.onePlayerW || mode == Mode.trainingB) && checkGame(board) == Result.w)
 				|| ((mode == Mode.onePlayerB || mode == Mode.trainingW) && checkGame(board) == Result.b))) {
-			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length);
+			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "L", !training);
 			return true;
 		}
-		return isTraining;
+		/*
+		if ((mode == Mode.trainingW && checkGame(board) == Result.w)
+				|| (mode == Mode.trainingB && checkGame(board) == Result.b)) {
+			if (!inArray(lastAugMove, winningMoves)) {
+				LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "W", !training);
+			}
+		}
+		 (for winningmoves) */
+		return training;
 	}
 
 	private static Result checkGame(Tile[][] board) {
@@ -278,10 +311,12 @@ public class Main {
 	private static void forfeit(Team t) {
 		if (t == Team.b) {
 			forfeit = Result.w;
-			System.out.println("Team Black has forfeited!");
+			if (!training)
+				System.out.println("Team Black has forfeited!");
 		} else {
 			forfeit = Result.b;
-			System.out.println("Team White has forfeited!");
+			if (!training)
+				System.out.println("Team White has forfeited!");
 		}
 	}
 
@@ -326,6 +361,15 @@ public class Main {
 			return false;
 		return true;
 	}
+	
+	private static boolean inArray (AugmentedMove augmove, ArrayList<AugmentedMove> list) {
+		for (int i = 0; i < list.size(); i++) {
+			if (augmove.equals(list.get(i)))
+				return true;
+		}
+		return false;
+		
+	}
 
 	private static int startRow(Team team, Tile[][] board) {
 		if (team == Team.w)
@@ -369,7 +413,7 @@ public class Main {
 			turn = Team.w;
 	}
 
-	private static boolean arrayEquals(Tile[][] board, Tile[][] board2) {
+	public static boolean arrayEquals(Tile[][] board, Tile[][] board2) {
 		for (int r = 0; r < board.length; r++)
 			for (int c = 0; c < board[0].length; c++)
 				if (board[r][c] != board2[r][c])

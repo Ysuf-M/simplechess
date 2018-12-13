@@ -14,4 +14,8 @@ public class AugmentedMove {
 	public String toString() {
 		return move.toString();
 	}
+	
+	public boolean equals (AugmentedMove other) {
+		return (move.equals(other.move) && Main.arrayEquals(board, other.board));
+	}
 }

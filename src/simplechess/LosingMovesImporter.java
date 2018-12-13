@@ -18,18 +18,18 @@ public class LosingMovesImporter {
 	public static ArrayList<AugmentedMove> Import(String fileName, int r, int c) {
 		rows = r;
 		cols = c;
-		ArrayList<AugmentedMove> losingMoves = new ArrayList<AugmentedMove>();
+		ArrayList<AugmentedMove> moves = new ArrayList<AugmentedMove>();
 		try {
 			Scanner reader = new Scanner(new FileReader(fileName));
 			while (reader.hasNextLine())
-				losingMoves.add(StringToAugMove(reader.nextLine().trim()));
+				moves.add(StringToAugMove(reader.nextLine().trim()));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		return losingMoves;
+		return moves;
 	}
 
-	public static void Export(AugmentedMove augMove, String fileName) {
+	public static void Export(AugmentedMove augMove, String fileName, boolean printExport) {
 		try {
 			BufferedWriter wr = new BufferedWriter(new FileWriter(fileName, true));
 			Tile[][] board = augMove.board;
@@ -44,7 +44,8 @@ public class LosingMovesImporter {
 			wr.append(";");
 			wr.append("" + move.row1 + " " + move.col1 + " " + move.row2 + " " + move.col2 + '\n');
 			wr.close();
-			System.out.println("Exported move '" + move + "'.");
+			if (printExport)
+				System.out.println("Exported move '" + move + "'.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
