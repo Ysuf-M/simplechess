@@ -246,17 +246,17 @@ public class Main {
 		if (((mode == Mode.noPlayer && checkGame(board) != Result.s)
 				|| ((mode == Mode.onePlayerW || mode == Mode.trainingB) && checkGame(board) == Result.w)
 				|| ((mode == Mode.onePlayerB || mode == Mode.trainingW) && checkGame(board) == Result.b))) {
-			LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "L", !training);
-			return true;
-		}
-		/*
-		if ((mode == Mode.trainingW && checkGame(board) == Result.w)
-				|| (mode == Mode.trainingB && checkGame(board) == Result.b)) {
-			if (!inArray(lastAugMove, winningMoves)) {
-				LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "W", !training);
+			if (!inArray(lastAugMove, losingMoves)) {
+				LosingMovesImporter.Export(lastAugMove, board.length + "x" + board[0].length + "L", !training);
+				return true;
 			}
 		}
-		 (for winningmoves) */
+		/*
+		 * if ((mode == Mode.trainingW && checkGame(board) == Result.w) || (mode ==
+		 * Mode.trainingB && checkGame(board) == Result.b)) { if (!inArray(lastAugMove,
+		 * winningMoves)) { LosingMovesImporter.Export(lastAugMove, board.length + "x" +
+		 * board[0].length + "W", !training); } } (for winningmoves)
+		 */
 		return training;
 	}
 
@@ -361,14 +361,14 @@ public class Main {
 			return false;
 		return true;
 	}
-	
-	private static boolean inArray (AugmentedMove augmove, ArrayList<AugmentedMove> list) {
+
+	private static boolean inArray(AugmentedMove augmove, ArrayList<AugmentedMove> list) {
 		for (int i = 0; i < list.size(); i++) {
 			if (augmove.equals(list.get(i)))
 				return true;
 		}
 		return false;
-		
+
 	}
 
 	private static int startRow(Team team, Tile[][] board) {
